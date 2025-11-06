@@ -39,6 +39,12 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('matchData', data); 
     });
 
+    socket.on('updateConfig', (data) => {
+        console.log(`updateConfig received from ${socket.id}: ${JSON.stringify(data)}`);
+        // Broadcast the message to all other connected clients except the sender
+        socket.broadcast.emit('updateConfig', data); 
+    });
+
     socket.on('disconnect', () => {
         console.log('User Disconnected', socket.id);
     });
