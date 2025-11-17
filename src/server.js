@@ -45,6 +45,12 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('updateConfig', data); 
     });
 
+    socket.on('reload', (data) => {
+        console.log(`reload received from ${socket.id}: ${JSON.stringify(data)}`);
+        // Broadcast the message to all other connected clients except the sender
+        socket.broadcast.emit('reload', data); 
+    });
+
     socket.on('disconnect', () => {
         console.log('User Disconnected', socket.id);
     });
