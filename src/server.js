@@ -1,6 +1,7 @@
 const express = require('express');
 const { Server } = require('socket.io');
 const http = require('http');
+const debug = require('debug')('app:server');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,42 +14,44 @@ const corsOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',
 // Configure the server with CORS enabled for your React app origins
 const io = new Server(server, {
     cors: {
-        origin: corsOrigins, 
+        origin: corsOrigins,
         methods: ["GET", "POST"]
     }
 });
 
 io.on('connection', (socket) => {
-    console.log(`User Connected: ${socket.id}`);
 
-    // Listen for a custom event from a client
+    const roomKey = socket.handshake.query.key;
+
+    if (roomKey) {
+        socket.join(roomKey);
+        console.log(`Socket ${socket.id} se unió a la sala: ${roomKey}`);
+    } else {
+        console.log(`Socket ${socket.id} conectado sin una key de sala.`);
+    }
+
     socket.on('send_message', (data) => {
-        console.log(`Message received from ${socket.id}: ${JSON.stringify(data)}`);
-        // Broadcast the message to all other connected clients except the sender
-        socket.broadcast.emit('receive_message', data); 
+        debug(`Message received from ${socket.id}: ${JSON.stringify(data)}`);
+        io.to(roomKey).emit('receive_message', data);
     });
     socket.on('matchDetails', (data) => {
-        console.log(`matchDetails received from ${socket.id}: ${JSON.stringify(data)}`);
-        // Broadcast the message to all other connected clients except the sender
-        socket.broadcast.emit('matchDetails', data); 
+        debug(`matchDetails received from ${socket.id}: ${JSON.stringify(data)}`);
+        io.to(roomKey).emit('matchDetails', data);
     });
 
     socket.on('matchData', (data) => {
-        console.log(`matchData received from ${socket.id}: ${JSON.stringify(data)}`);
-        // Broadcast the message to all other connected clients except the sender
-        socket.broadcast.emit('matchData', data); 
+        debug(`matchData received from ${socket.id}: ${JSON.stringify(data)}`);
+        io.to(roomKey).emit('matchData', data);
     });
 
     socket.on('updateConfig', (data) => {
-        console.log(`updateConfig received from ${socket.id}: ${JSON.stringify(data)}`);
-        // Broadcast the message to all other connected clients except the sender
-        socket.broadcast.emit('updateConfig', data); 
+        debug(`updateConfig received from ${socket.id}: ${JSON.stringify(data)}`);
+        io.to(roomKey).emit('updateConfig', data);
     });
 
     socket.on('reload', (data) => {
-        console.log(`reload received from ${socket.id}: ${JSON.stringify(data)}`);
-        // Broadcast the message to all other connected clients except the sender
-        socket.broadcast.emit('reload', data); 
+        debug(`reload received from ${socket.id}: ${JSON.stringify(data)}`);
+        io.to(roomKey).emit('reload', data);
     });
 
     socket.on('disconnect', () => {
