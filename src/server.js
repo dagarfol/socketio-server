@@ -6,12 +6,9 @@ const debug = require('debug')('app:server');
 const app = express();
 const server = http.createServer(app);
 
-// Use process.env.PORT provided by Railway, default to 3005 for local testing
 const PORT = process.env.PORT || 3005;
 const corsOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ["http://localhost:3000", "http://localhost:3001"];
 
-
-// Configure the server with CORS enabled for your React app origins
 const io = new Server(server, {
     cors: {
         origin: corsOrigins,
@@ -33,6 +30,14 @@ io.on('connection', (socket) => {
     socket.on('send_message', (data) => {
         debug(`Message received from ${socket.id}: ${JSON.stringify(data)}`);
         io.to(roomKey).emit('receive_message', data);
+    });
+    socket.on('handshake', (data) => {
+        debug(`handshake received from ${socket.id}: ${JSON.stringify(data)}`);
+        io.to(roomKey).emit('handshake', data);
+    });
+    socket.on('handshake-response', (data) => {
+        debug(`handshake-response received from ${socket.id}: ${JSON.stringify(data)}`);
+        io.to(roomKey).emit('handshake-response', data);
     });
     socket.on('matchDetails', (data) => {
         debug(`matchDetails received from ${socket.id}: ${JSON.stringify(data)}`);
