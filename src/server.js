@@ -13,7 +13,10 @@ const io = new Server(server, {
     cors: {
         origin: corsOrigins,
         methods: ["GET", "POST"]
-    }
+    },
+    pingTimeout: 60000, // 60 seconds
+    pingInterval: 25000, // 25 seconds
+    transports: ['websocket', 'polling']
 });
 
 io.on('connection', (socket) => {
@@ -22,9 +25,9 @@ io.on('connection', (socket) => {
 
     if (roomKey) {
         socket.join(roomKey);
-        console.log(`Socket ${socket.id} se unió a la sala: ${roomKey}`);
+        console.log(`✅ Socket ${socket.id} se unió a la sala: ${roomKey}`);
     } else {
-        console.log(`Socket ${socket.id} conectado sin una key de sala.`);
+        console.log(`✅ Socket ${socket.id} conectado sin una key de sala.`);
     }
 
     socket.on('send_message', (data) => {
@@ -59,11 +62,35 @@ io.on('connection', (socket) => {
         io.to(roomKey).emit('reload', data);
     });
 
+    // Handle ping for heartbeat
+    socket.on('ping', () => {
+        socket.emit('pong');
+    });
+
+
+
     socket.on('disconnect', () => {
-        console.log('User Disconnected', socket.id);
+        console.log('❌ User Disconnected', socket.id);
     });
 });
 
+// Keep the server alive (prevent Render from sleeping)
+const keepAlive = () => {
+    console.log('💓 Server heartbeat - staying alive');
+};
+
+// Log every 5 minutes to show activity
+setInterval(keepAlive, 5 * 60 * 1000);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    connections: io.engine.clientsCount
+  });
+});
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
